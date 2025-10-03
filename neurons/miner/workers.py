@@ -63,6 +63,10 @@ async def _complete_one_task(
         return
 
     bt.logging.debug(f"Task received. Prompt: {pull.task.prompt}.")
+    if len(pull.task.prompt) > 1024:
+        bt.logging.warning(f"Prompt is too long ({len(pull.task.prompt)} > 1024). Maybe it's 2d-to-3d. Skipping the task.")
+        validator_selector.set_cooldown(validator_uid, int(time.time()) + FAILED_VALIDATOR_DELAY)
+        return
 
     results = await _generate(generate_url, pull.task.prompt) or b""
 
