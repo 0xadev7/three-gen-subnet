@@ -62,6 +62,7 @@ async def _complete_one_task(
             validator_selector.set_cooldown(validator_uid, pull.cooldown_until)
         return
 
+    # TODO: Remove after 2D-to-3D generation is supported.
     bt.logging.debug(f"Task received. Prompt: {pull.task.prompt}.")
     if len(pull.task.prompt) > 1024:
         bt.logging.warning(f"Prompt is too long ({len(pull.task.prompt)} > 1024). Maybe it's 2d-to-3d. Skipping the task.")
