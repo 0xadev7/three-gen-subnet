@@ -271,7 +271,7 @@ def add_task_args(parser: argparse.ArgumentParser) -> None:
         "--task.synthetic.text_tasks_ratio",
         type=float,
         help="Ratio of text tasks to total synthetic tasks (0.0 = all image, 1.0 = all text)",
-        default=1.0,
+        default=0.8,
     )
     parser.add_argument(
         "--task.synthetic.get_prompts.endpoint",
