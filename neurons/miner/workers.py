@@ -34,7 +34,7 @@ async def _complete_one_task(
 ) -> None:
     validator_uid = validator_selector.get_next_validator_to_query()
     if validator_uid is None:
-        await asyncio.sleep(3.0)
+        await asyncio.sleep(10.0)
         return
 
     # Setting cooldown to prevent selecting the same validator for concurrent task.
