@@ -42,7 +42,7 @@ class ImageTask(BaseModel):
         return f"image:{self.prompt_hash}"
 
 
-ProtocolTask = Annotated[TextTask | ImageTask, Field(discriminator="type")]
+ProtocolTask = TextTask | ImageTask
 
 ProtocolTaskType = Literal["text", "image"]
 
