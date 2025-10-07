@@ -34,11 +34,11 @@ async def _complete_one_task(
 ) -> None:
     validator_uid = validator_selector.get_next_validator_to_query()
     if validator_uid is None:
-        await asyncio.sleep(10.0)
+        await asyncio.sleep(3.0)
         return
 
     # Setting cooldown to prevent selecting the same validator for concurrent task.
-    validator_selector.set_cooldown(validator_uid, int(time.time()) + 300)
+    validator_selector.set_cooldown(validator_uid, int(time.time()) + 30)
 
     async with bt.dendrite(wallet=wallet) as dendrite:
         pull = await _pull_task(dendrite, metagraph, validator_uid)
