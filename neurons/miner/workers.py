@@ -64,7 +64,7 @@ async def _complete_one_task(
 
     bt.logging.debug(f"Task received. Prompt: {pull.task.prompt[:100]}.")
 
-    if len(pull.task.prompt) > 1024:
+    if pull.task.type == "image":
         results = await _generate_img(generate_url, pull.task.prompt) or b""
     else:
         results = await _generate(generate_url, pull.task.prompt) or b""
@@ -114,7 +114,17 @@ async def _submit_results(
         compressed_results = base64.b64encode(pyspz.compress(results, workers=-1)).decode(encoding="utf-8")
     else:
         compressed_results = ""  # Skipping task not to be penalized (same could be done for low quality results)
-    synapse = SubmitResults(task=pull.task, results=compressed_results, submit_time=submit_time, signature=signature)
+
+    # TODO: Use updated version only
+    if validator_uid == 79 or validator_uid == 199:
+        synapse = SubmitResults(
+            task_id=pull.task.id, results=compressed_results, submit_time=submit_time, signature=signature
+        )
+    else:
+        synapse = SubmitResults(
+            task=pull.task, results=compressed_results, submit_time=submit_time, signature=signature
+        )
+
     response = typing.cast(
         SubmitResults,
         await dendrite.call(
