@@ -64,7 +64,9 @@ async def _complete_one_task(
 
     bt.logging.debug(f"Task received. Prompt: {pull.task.prompt[:100]}.")
 
-    if pull.task.type == "image":
+    # TODO: Use type from pydantic directly
+    task_dict = pull.task.model_dump()
+    if task_dict['type'] == "image":
         results = await _generate_img(generate_url, pull.task.prompt) or b""
     else:
         results = await _generate(generate_url, pull.task.prompt) or b""
@@ -117,8 +119,13 @@ async def _submit_results(
 
     # TODO: Use updated version only
     if validator_uid == 79 or validator_uid == 199:
+        task_dict = pull.task.model_dump() if pull.task is not None else None
+        
+        if task_dict is None:
+            raise ValueError("Task is None, cannot submit results.")
+
         synapse = SubmitResults(
-            task_id=pull.task.id, results=compressed_results, submit_time=submit_time, signature=signature
+            task_id=task_dict['id'], results=compressed_results, submit_time=submit_time, signature=signature
         )
     else:
         synapse = SubmitResults(
