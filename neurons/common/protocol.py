@@ -10,6 +10,11 @@ class Task(BaseModel):
         description="Unique task identifier automatically generated using UUID4",
     )
     prompt: str = Field(default="", description="Prompt text to use for 3D model generation")
+    # TODO: Use updated protocol
+    type: str = Field(
+        default="text",
+        description="Type of generation task. Supported types: 'text' for text-to-3D, 'image' for image-to-3D",
+    )
 
 
 class Feedback(BaseModel):
