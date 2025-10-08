@@ -62,14 +62,12 @@ async def _complete_one_task(
             validator_selector.set_cooldown(validator_uid, pull.cooldown_until)
         return
 
-    # TODO: Remove after 2D-to-3D generation is supported.
-    bt.logging.debug(f"Task received. Prompt: {pull.task.prompt}.")
-    if len(pull.task.prompt) > 1024:
-        bt.logging.warning(f"Prompt is too long ({len(pull.task.prompt)} > 1024). Maybe it's 2d-to-3d. Skipping the task.")
-        validator_selector.set_cooldown(validator_uid, int(time.time()) + FAILED_VALIDATOR_DELAY)
-        return
+    bt.logging.debug(f"Task received. Prompt: {pull.task.prompt[:100]}.")
 
-    results = await _generate(generate_url, pull.task.prompt) or b""
+    if len(pull.task.prompt) > 1024:
+        results = await _generate_img(generate_url, pull.task.prompt) or b""
+    else:
+        results = await _generate(generate_url, pull.task.prompt) or b""
 
     async with bt.dendrite(wallet=wallet) as dendrite:
         submit = await _submit_results(wallet, dendrite, metagraph, validator_uid, pull, results)
@@ -150,6 +148,31 @@ async def _generate(generate_url: str, prompt: str, timeout: float | None = None
     async with aiohttp.ClientSession(timeout=client_timeout) as session:
         try:
             async with session.post(generate_url, data={"prompt": prompt}) as response:
+                if response.status == 200:
+                    results = await response.read()
+                    bt.logging.debug(f"Generation completed. Size: {len(results)}")
+                    return results
+                else:
+                    bt.logging.error(f"Generation failed with code: {response.status}")
+        except aiohttp.ClientConnectorError:
+            bt.logging.error(f"Failed to connect to the endpoint. The endpoint might be inaccessible: {generate_url}.")
+        except TimeoutError:
+            bt.logging.error(f"The request to the endpoint timed out: {generate_url}")
+        except aiohttp.ClientError as e:
+            bt.logging.error(f"An unexpected client error occurred: {e} ({generate_url})")
+        except Exception as e:
+            bt.logging.error(f"An unexpected error occurred: {e} ({generate_url})")
+
+
+async def _generate_img(
+    generate_url: str, image_prompt: str, timeout: float | None = None
+) -> bytes | None:  # noqa: ASYNC109
+    bt.logging.debug(f"Generating for image prompt: {image_prompt[:100]} with timeout {timeout} seconds")
+
+    client_timeout = ClientTimeout(total=timeout) if timeout is not None else sentinel
+    async with aiohttp.ClientSession(timeout=client_timeout) as session:
+        try:
+            async with session.post(generate_url, data={"image_b64": image_prompt}) as response:
                 if response.status == 200:
                     results = await response.read()
                     bt.logging.debug(f"Generation completed. Size: {len(results)}")
