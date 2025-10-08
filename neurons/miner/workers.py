@@ -38,7 +38,7 @@ async def _complete_one_task(
         return
 
     # Setting cooldown to prevent selecting the same validator for concurrent task.
-    validator_selector.set_cooldown(validator_uid, int(time.time()) + 30)
+    validator_selector.set_cooldown(validator_uid, int(time.time()) + 300)
 
     async with bt.dendrite(wallet=wallet) as dendrite:
         pull = await _pull_task(dendrite, metagraph, validator_uid)
