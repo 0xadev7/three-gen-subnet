@@ -119,14 +119,9 @@ async def _submit_results(
         raise ValueError("Task is None when submitting results")
 
     # TODO: Use updated synapse after all validators are updated
-    if validator_uid == 79 or validator_uid == 199:
-        synapse = SubmitResults(
-            task_id=pull.task.id, results=compressed_results, submit_time=submit_time, signature=signature
-        )
-    else:
-        synapse = SubmitResults(
-            task=pull.task, results=compressed_results, submit_time=submit_time, signature=signature
-        )
+    synapse = SubmitResults(
+        task=pull.task, results=compressed_results, submit_time=submit_time, signature=signature
+    )
 
     response = typing.cast(
         SubmitResults,
