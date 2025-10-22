@@ -14,42 +14,6 @@ class TextTask(BaseModel):
         description="Unique identifier for this task",
     )
     prompt: str = Field(default="", description="Prompt text to use for 3D model generation")
-    # TODO: Use updated protocol
-    type: str = Field(
-        default="text",
-        description="Type of generation task. Supported types: 'text' for text-to-3D, 'image' for image-to-3D",
-    )
-
-    @cached_property
-    def log_id(self) -> str:
-        if len(self.prompt) <= 100:
-            return self.prompt
-        return f"{self.prompt[:97]}..."
-
-
-class ImageTask(BaseModel):
-    type: Literal["image"] = "image"
-    id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
-        description="Unique identifier for this task",
-    )
-    prompt: str = Field(
-        default="",
-        description="Base64-encoded image data for 3D model generation",
-    )
-
-    @cached_property
-    def prompt_hash(self) -> str:
-        return blake3.blake3(self.prompt.encode()).hexdigest()
-
-    @cached_property
-    def log_id(self) -> str:
-        return f"image:{self.prompt_hash}"
-
-
-ProtocolTask = TextTask | ImageTask
-
-ProtocolTaskType = Literal["text", "image"]
 
     @cached_property
     def log_id(self) -> str:
