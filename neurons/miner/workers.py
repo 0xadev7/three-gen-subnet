@@ -89,7 +89,7 @@ async def _pull_task(dendrite: bt.dendrite, metagraph: bt.metagraph, validator_u
     response = typing.cast(
         PullTask,
         await dendrite.call(
-            target_axon=metagraph.axons[validator_uid], synapse=synapse, deserialize=False, timeout=20.0
+            target_axon=metagraph.axons[validator_uid], synapse=synapse, deserialize=False, timeout=30.0
         ),
     )
     return response
