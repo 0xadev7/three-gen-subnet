@@ -4,8 +4,9 @@ import bittensor as bt
 from bittensor_wallet import Keypair
 
 from validator.gateway.gateway import Gateway
-from validator.gateway.gateway_api import GatewayApi, GatewayTask, GetGatewayTasksResult
+from validator.gateway.gateway_api import GatewayApi, GatewayTask
 from validator.gateway.gateway_scorer import GatewayScorer
+from validator.gateway.http3_client.http3_client import Http3Exception
 from validator.task_manager.task_storage.organic_task import GatewayOrganicTask
 
 
@@ -35,19 +36,37 @@ class GatewayManager:
             return rd.choice(self._gateways)  # noqa: S311 # nosec: B311
         return gateway
 
-    def update_gateways(self, *, gateways: list[Gateway]) -> None:
+    def _update_gateways(self, *, gateways: list[Gateway]) -> None:
         """Updates the list of gateways."""
         self._gateways = self._gateway_scorer.score(gateways=gateways)
         for gateway in self._gateways:
             bt.logging.trace(f"Gateway updated: {gateway.get_info()}")
 
-    async def get_tasks(
-        self, *, gateway_host: str, validator_hotkey: Keypair, task_count: int
-    ) -> GetGatewayTasksResult:
+    async def get_tasks(self, *, url: str, validator_hotkey: Keypair, task_count: int) -> list[GatewayTask]:
         """Fetches tasks from the gateway."""
-        tasks = await self._gateway_api.get_tasks(
-            host=gateway_host, validator_hotkey=validator_hotkey, task_count=task_count
-        )
+        tasks: list[GatewayTask] = []
+        try:
+            # Reset disabled flag after each try to fetch task
+            # and set up it again based on the result.
+            for gateway in self._gateways:
+                gateway.disabled = False
+            result = await self._gateway_api.get_tasks(
+                host=url, validator_hotkey=validator_hotkey, task_count=task_count
+            )
+            tasks = result.tasks
+            self._gateways = result.gateways
+        except Http3Exception as e:
+            bt.logging.error(f"Failed fetching gateway tasks: {e}.")
+
+        # Disable gateway if no tasks were fetched.
+        # Either because no real tasks or because of network error.
+        if not tasks:
+            bt.logging.trace(f"Gateway {url} is disabled for the next iteration: no tasks returned.")
+            for gateway in self._gateways:
+                if gateway.url == url:
+                    gateway.disabled = True
+                    break
+        self._update_gateways(gateways=self._gateways)
         return tasks
 
     async def add_result(
